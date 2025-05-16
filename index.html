@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All-in-One Web Tools</title>
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <!-- MD5 Library (Crypto.subtle doesn't have MD5) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --border-radius: 5px;
+            --box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: var(--box-shadow);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #e9ecef;
+            padding: 20px;
+            border-right: 1px solid #dee2e6;
+            height: calc(100vh - 70px); /* Header height */
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            font-size: 1.2em;
+            color: var(--primary-color);
+            margin-top: 0;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar ul li a {
+            display: block;
+            padding: 10px 15px;
+            text-decoration: none;
+            color: var(--dark-color);
+            border-radius: var(--border-radius);
+            margin-bottom: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar ul li a:hover, .sidebar ul li a.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            height: calc(100vh - 70px); /* Header height */
+        }
+
+        .tool-section {
+            display: none; /* Hidden by default */
+            background-color: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin-bottom: 20px;
+        }
+
+        .tool-section.active {
+            display: block;
+        }
+
+        .tool-section h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        textarea, input[type="text"], input[type="number"], input[type="password"], select {
+            width: calc(100% - 22px); /* Account for padding and border */
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ced4da;
+            border-radius: var(--border-radius);
+            font-size: 1em;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.secondary {
+            background-color: var(--secondary-color);
+        }
+        button.secondary:hover {
+            background-color: #545b62;
+        }
+
+        .output-area, .result-area {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            margin-top: 10px;
+            word-wrap: break-word;
+            white-space: pre-wrap; /* To preserve line breaks */
+        }
+
+        /* Calculator styles */
+        .calculator {
+            width: 300px;
+            margin: auto;
+        }
+        .calculator-screen {
+            width: calc(100% - 22px);
+            height: 50px;
+            background-color: #222;
+            color: white;
+            text-align: right;
+            font-size: 2em;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        .calculator-keys {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+        }
+        .calculator-keys button {
+            font-size: 1.2em;
+            height: 60px;
+        }
+        .calculator-keys button.operator {
+            background-color: #ff9500;
+        }
+        .calculator-keys button.operator:hover {
+            background-color: #e08500;
+        }
+        .calculator-keys button.clear {
+            background-color: var(--danger-color);
+            grid-column: span 2;
+        }
+         .calculator-keys button.clear:hover {
+            background-color: #c82333;
+        }
+        .calculator-keys button.equal {
+            background-color: var(--success-color);
+            grid-column: span 2;
+        }
+        .calculator-keys button.equal:hover {
+            background-color: #1e7e34;
+        }
+
+        #qrcodeCanvas {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            display: inline-block; /* So border fits content */
+        }
+         #qrcodeCanvas img {
+            display: block; /* Remove extra space below image */
+        }
+
+        footer {
+            background-color: var(--dark-color);
+            color: var(--light-color);
+            text-align: center;
+            padding: 15px;
+            font-size: 0.9em;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+            }
+            .main-content {
+                 height: auto;
+            }
+            .calculator {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>All-in-One Web Tools</h1>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <h2>Tools</h2>
+            <ul>
+                <li><a href="#" class="tool-link active" data-tool="text-utils">Text Utilities</a></li>
+                <li><a href="#" class="tool-link" data-tool="case-converter">Case Converter</a></li>
+                <li><a href="#" class="tool-link" data-tool="random-number">Random Number Generator</a></li>
+                <li><a href="#" class="tool-link" data-tool="calculator">Calculator</a></li>
+                <li><a href="#" class="tool-link" data-tool="base64">Base64 Encoder/Decoder</a></li>
+                <li><a href="#" class="tool-link" data-tool="qr-generator">QR Code Generator</a></li>
+                <li><a href="#" class="tool-link" data-tool="hasher">Hash Generator</a></li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <!-- Welcome Message or Default Tool -->
+            <div id="welcome-message" class="tool-section active">
+                <h3>Welcome to All-in-One Web Tools!</h3>
+                <p>Select a tool from the sidebar to get started.</p>
+            </div>
+
+            <!-- Text Utilities -->
+            <div id="text-utils" class="tool-section">
+                <h3>Text Utilities</h3>
+                <textarea id="textUtilsInput" placeholder="Enter your text here..."></textarea>
+                <button onclick="countCharsWords()">Count Characters/Words</button>
+                <button onclick="reverseText()">Reverse Text</button>
+                <button class="secondary" onclick="clearText('textUtilsInput', 'textUtilsOutput')">Clear</button>
+                <div id="textUtilsOutput" class="output-area"></div>
+            </div>
+
+            <!-- Case Converter -->
+            <div id="case-converter" class="tool-section">
+                <h3>Case Converter</h3>
+                <textarea id="caseConverterInput" placeholder="Enter text to convert..."></textarea>
+                <button onclick="convertToUppercase()">UPPERCASE</button>
+                <button onclick="convertToLowercase()">lowercase</button>
+                <button onclick="convertToCapitalized()">Capitalized Case</button>
+                <button onclick="convertToSentenceCase()">Sentence case.</button>
+                <button class="secondary" onclick="clearText('caseConverterInput', 'caseConverterOutput')">Clear</button>
+                <div id="caseConverterOutput" class="output-area"></div>
+            </div>
+
+            <!-- Random Number Generator -->
+            <div id="random-number" class="tool-section">
+                <h3>Random Number Generator</h3>
+                <label for="minNum">Min:</label>
+                <input type="number" id="minNum" value="1">
+                <label for="maxNum">Max:</label>
+                <input type="number" id="maxNum" value="100">
+                <button onclick="generateRandomNumber()">Generate</button>
+                <div id="randomNumberOutput" class="output-area"></div>
+            </div>
+
+            <!-- Calculator -->
+            <div id="calculator" class="tool-section">
+                <h3>Simple Calculator</h3>
+                <div class="calculator">
+                    <div id="calculatorDisplay" class="calculator-screen">0</div>
+                    <div class="calculator-keys">
+                        <button onclick="clearDisplay()" class="clear">AC</button>
+                        <button onclick="inputOperator('/')" class="operator">/</button>
+                        <button onclick="inputOperator('*')" class="operator">*</button>
+                        <button onclick="inputDigit('7')">7</button>
+                        <button onclick="inputDigit('8')">8</button>
+                        <button onclick="inputDigit('9')">9</button>
+                        <button onclick="inputOperator('-')" class="operator">-</button>
+                        <button onclick="inputDigit('4')">4</button>
+                        <button onclick="inputDigit('5')">5</button>
+                        <button onclick="inputDigit('6')">6</button>
+                        <button onclick="inputOperator('+')" class="operator">+</button>
+                        <button onclick="inputDigit('1')">1</button>
+                        <button onclick="inputDigit('2')">2</button>
+                        <button onclick="inputDigit('3')">3</button>
+                        <button onclick="calculateResult()" class="equal">=</button>
+                        <button onclick="inputDigit('0')">0</button>
+                        <button onclick="inputDecimal()">.</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Base64 Encoder/Decoder -->
+            <div id="base64" class="tool-section">
+                <h3>Base64 Encoder/Decoder</h3>
+                <textarea id="base64Input" placeholder="Enter text for Base64 operations..."></textarea>
+                <button onclick="base64Encode()">Encode to Base64</button>
+                <button onclick="base64Decode()">Decode from Base64</button>
+                <button class="secondary" onclick="clearText('base64Input', 'base64Output')">Clear</button>
+                <div id="base64Output" class="output-area"></div>
+            </div>
+
+            <!-- QR Code Generator -->
+            <div id="qr-generator" class="tool-section">
+                <h3>QR Code Generator</h3>
+                <input type="text" id="qrInput" placeholder="Enter text or URL for QR code">
+                <button onclick="generateQRCode()">Generate QR Code</button>
+                <div id="qrcodeCanvas"></div>
+                <div id="qrError" class="output-area" style="color: var(--danger-color); display: none;"></div>
+            </div>
+
+            <!-- Hash Generator -->
+            <div id="hasher" class="tool-section">
+                <h3>Hash Generator (MD5, SHA-1, SHA-256)</h3>
+                <textarea id="hashInput" placeholder="Enter text to hash..."></textarea>
+                <button onclick="generateHashes()">Generate Hashes</button>
+                <button class="secondary" onclick="clearText('hashInput', 'hashOutputMD5', 'hashOutputSHA1', 'hashOutputSHA256')">Clear</button>
+                <h4>MD5:</h4>
+                <div id="hashOutputMD5" class="output-area"></div>
+                <h4>SHA-1:</h4>
+                <div id="hashOutputSHA1" class="output-area"></div>
+                <h4>SHA-256:</h4>
+                <div id="hashOutputSHA256" class="output-area"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <footer>
+        <p>© <span id="currentYear"></span> Your Tools Website. All rights reserved.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toolLinks = document.querySelectorAll('.tool-link');
+            const toolSections = document.querySelectorAll('.tool-section');
+            const welcomeMessage = document.getElementById('welcome-message');
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+            // Function to show selected tool and hide others
+            function showTool(toolId) {
+                toolSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                welcomeMessage.classList.remove('active'); // Hide welcome message
+
+                const selectedTool = document.getElementById(toolId);
+                if (selectedTool) {
+                    selectedTool.classList.add('active');
+                } else if (toolId === 'welcome-message') {
+                    welcomeMessage.classList.add('active');
+                }
+            }
+
+            // Add click event listeners to tool links
+            toolLinks.forEach(link => {
+                link.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    toolLinks.forEach(l => l.classList.remove('active')); // Remove active class from all links
+                    link.classList.add('active'); // Add active class to clicked link
+                    const toolId = link.getAttribute('data-tool');
+                    showTool(toolId);
+                });
+            });
+
+            // Show welcome message or first tool by default
+            const firstToolLink = document.querySelector('.tool-link.active');
+            if (firstToolLink) {
+                 showTool(firstToolLink.getAttribute('data-tool'));
+            } else {
+                showTool('welcome-message');
+            }
+        });
+
+        // Utility function to clear text areas and outputs
+        function clearText(...elementIds) {
+            elementIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    if (element.tagName === 'TEXTAREA' || element.tagName === 'INPUT') {
+                        element.value = '';
+                    } else {
+                        element.innerHTML = '';
+                    }
+                }
+            });
+        }
+
+
+        // --- Text Utilities ---
+        function countCharsWords() {
+            const text = document.getElementById('textUtilsInput').value;
+            const charCount = text.length;
+            const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+            document.getElementById('textUtilsOutput').innerText = `Characters: ${charCount}\nWords: ${wordCount}`;
+        }
+
+        function reverseText() {
+            const text = document.getElementById('textUtilsInput').value;
+            document.getElementById('textUtilsOutput').innerText = text.split('').reverse().join('');
+        }
+
+        // --- Case Converter ---
+        function convertToUppercase() {
+            const text = document.getElementById('caseConverterInput').value;
+            document.getElementById('caseConverterOutput').innerText = text.toUpperCase();
+        }
+        function convertToLowercase() {
+            const text = document.getElementById('caseConverterInput').value;
+            document.getElementById('caseConverterOutput').innerText = text.toLowerCase();
+        }
+        function convertToCapitalized() {
+            const text = document.getElementById('caseConverterInput').value;
+            document.getElementById('caseConverterOutput').innerText = text.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+        }
+        function convertToSentenceCase() {
+            const text = document.getElementById('caseConverterInput').value.toLowerCase();
+            document.getElementById('caseConverterOutput').innerText = text.replace(/(^\w{1}|\.\s*\w{1})/gi, char => char.toUpperCase());
+        }
+
+        // --- Random Number Generator ---
+        function generateRandomNumber() {
+            const min = parseInt(document.getElementById('minNum').value);
+            const max = parseInt(document.getElementById('maxNum').value);
+            if (isNaN(min) || isNaN(max) || min > max) {
+                document.getElementById('randomNumberOutput').innerText = 'Invalid input. Min must be less than or equal to Max.';
+                return;
+            }
+            const randomNumber = Math.floor(Math.random() * (max - min + 1)) + min;
+            document.getElementById('randomNumberOutput').innerText = `Random Number: ${randomNumber}`;
+        }
+
+        // --- Calculator ---
+        let calculatorDisplayValue = '0';
+        let firstOperand = null;
+        let operator = null;
+        let waitingForSecondOperand = false;
+
+        const calculatorDisplay = document.getElementById('calculatorDisplay');
+
+        function updateDisplay() {
+            calculatorDisplay.innerText = calculatorDisplayValue;
+        }
+        updateDisplay(); // Initial display
+
+        function inputDigit(digit) {
+            if (waitingForSecondOperand) {
+                calculatorDisplayValue = digit;
+                waitingForSecondOperand = false;
+            } else {
+                calculatorDisplayValue = calculatorDisplayValue === '0' ? digit : calculatorDisplayValue + digit;
+            }
+            updateDisplay();
+        }
+
+        function inputDecimal() {
+            if (waitingForSecondOperand) {
+                 calculatorDisplayValue = '0.';
+                 waitingForSecondOperand = false;
+                 updateDisplay();
+                 return;
+            }
+            if (!calculatorDisplayValue.includes('.')) {
+                calculatorDisplayValue += '.';
+            }
+            updateDisplay();
+        }
+
+        function inputOperator(nextOperator) {
+            const inputValue = parseFloat(calculatorDisplayValue);
+
+            if (operator && waitingForSecondOperand) {
+                operator = nextOperator;
+                return;
+            }
+
+            if (firstOperand === null 
